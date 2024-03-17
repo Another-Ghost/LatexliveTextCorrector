@@ -2,13 +2,14 @@
 // @name         Add $$
 // @namespace    http://tampermonkey.net/
 // @version      2024-03-14
-// @description  Add `$ $` to symbols
+// @description  Add `$ $` to equation
 // @author       Another_Ghost
 // @match        https://*.latexlive.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
 // @grant        none
 // @license      MIT
 // ==/UserScript==
+
 
 (function () {
     'use strict';
@@ -36,8 +37,37 @@
             clearInterval(interval);
         }
 
-
     }, 100);
+
+    createButton(1, convertFormulasToLaTeX);
+    createButton(2, convertFormulasToLaTeX);
+
+    function createButton(number, convert) {
+        // create a new button
+        let btn = document.createElement('button');
+        btn.innerHTML = `复制${number}`;
+        // add class to btn
+        btn.className = 'btn btn-light theme-fill';
+        // set id
+        btn.id = `copy-btn${number}`;
+        // add click handler
+        btn.onclick = function () {
+            // get the selected element
+            var selected = document.querySelector('#txta_input');
+            // copy the text
+            navigator.clipboard.writeText(convert(selected.value));
+            toast('复制成功');
+        };
+        var CONTAINER = "#wrap_immediate > row > div.col-5.col-sm-5.col-md-5.col-lg-5.col-xl-5";
+        // wait container appear and add btn
+        var interval = setInterval(function () {
+            var wrap = document.querySelector(CONTAINER);
+            if (wrap) {
+                wrap.appendChild(btn);
+                clearInterval(interval);
+            }
+        }, 200);
+    }
 
 /**
  * 将字符串中的公式转换为LaTeX格式，用"$$"包围起来。
@@ -52,6 +82,15 @@ function convertFormulasToLaTeX(inStr) {
     let equation = "";
     let bEquation = false;
     let lastCharPos = 0;
+    let PushEquationToOutStr = () => {
+        if(/[\(\-<=>\\\^_{\|}]/.test(equation)){
+            outStr += ToLatex(equation, lastCharPos);
+        }
+        else
+        {
+            outStr+=equation;
+        }
+    }
     for(let i = 0; i < str.length; i++) {
         let c = str[i];
         if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
@@ -68,23 +107,17 @@ function convertFormulasToLaTeX(inStr) {
             if(bEquation)
             {
                 equation += c;
-                lastCharPos = equation.length; //记录最后一个字符的位置的后一个位置
-            }
+                lastCharPos = equation.length; //记录最后一个字符的位置的后一个位置     
+            }   
         } else if (c.match(/\s/)) { //判断是否是空白字符
             if (bEquation) {
-                equation += c; //因为公式中可能有空格字符，所以先把空格字符加入公式字符串
+                equation += c;  //因为公式中可能有空格字符，所以先把空格字符加入公式字符串
             } else {
                 outStr += c;
             }
         } else if (c.match(/[\u4e00-\u9fff]/)) { //判断是否是中文字符
             if (bEquation) {
-                if(/[\(\-<=>\\\^_{\|}]/.test(equation)){
-                    outStr += ToLatex(equation, lastCharPos);
-                }
-                else
-                {
-                    outStr+=equation;
-                }
+                PushEquationToOutStr();
                 bEquation = false;
                 equation = "";
                 lastCharPos = 0;
@@ -93,37 +126,37 @@ function convertFormulasToLaTeX(inStr) {
         }
     }
     if(equation.length > 0) {
-        outStr += ToLatex(equation, lastCharPos);
+        PushEquationToOutStr();
     }
     console.log(outStr);
     return outStr;
 }
-
-/**
- * Insert a character at a specified index in the original string.
- * @param {string} originalString - The original string.
- * @param {string} charToInsert - The character to insert.
- * @param {number} index - The index to insert at.
- * @returns {string} - The new string with the inserted character.
- */
-function insertCharAt(originalString, charToInsert, index) {
-    let firstPart = originalString.slice(0, index);
-    let secondPart = originalString.slice(index);
-    return `${firstPart}${charToInsert}${secondPart}`;
-}
-
-function ToLatex(equation, lastCharPos)
-{
-    if(equation[equation.length-1] != '$')
-    {
-        equation = insertCharAt(equation, "$$", lastCharPos); //在公式字符串的最后一个非空格字符的位置的后一个位置插入"$$")
+    
+    /**
+     * Insert a character at a specified index in the original string.
+     * @param {string} originalString - The original string.
+     * @param {string} charToInsert - The character to insert.
+     * @param {number} index - The index to insert at.
+     * @returns {string} - The new string with the inserted character.
+     */
+    function insertCharAt(originalString, charToInsert, index) {
+        let firstPart = originalString.slice(0, index);
+        let secondPart = originalString.slice(index);
+        return `${firstPart}${charToInsert}${secondPart}`;
     }
-    if(equation[0] != '$')
+
+    function ToLatex(equation, lastCharPos)
     {
-        equation = "$$" + equation;
+        if(equation[equation.length-1] != '$')
+        {
+            equation = insertCharAt(equation, "$$", lastCharPos); //在公式字符串的最后一个非空格字符的位置的后一个位置插入"$$")
+        }
+        if(equation[0] != '$')
+        {
+            equation = "$$" + equation;
+        }
+        return equation;
     }
-    return equation;
-}
 
     function toast(msg) {
         var toast = document.createElement('div');

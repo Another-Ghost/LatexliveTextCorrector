@@ -1,7 +1,7 @@
 document.getElementById('button').addEventListener('click', function(){
 let text_input = document.getElementById('text1');
 let text_output = document.getElementById('text2');
-text_output.value = convertFormulasToLaTeX(text_input.value);
+text_output.value = convertFormulasToLaTeX(text_input.value, ['\\boldsymbol']);
 //console.log(text_input);
 // let text_output = document.getElementById('text2');
 // document.getElementById('text1').value = "3) 求序列  R_{4}(n)  的  Z  变换";
@@ -21,8 +21,16 @@ text_output.value = convertFormulasToLaTeX(text_input.value);
 /**
  * 将字符串中的公式转换为LaTeX格式，用"$$"包围起来。
  */
-function convertFormulasToLaTeX(inStr) {
+function convertFormulasToLaTeX(inStr, wordsToRemove = '0') {
     //let str1 = "3) 求序列  R_{4}(n)  的  Z  变换:\n\n\\boldsymbol{X}(\\mathbf{z})=\\sum_{\\boldsymbol{n}=-\\infty}^{\\infty} \\boldsymbol{x}(\\boldsymbol{n}) z^{-n}=\\sum_{\\boldsymbol{n}\n";
+    if(Array.isArray(wordsToRemove)) {
+        for(let i = 0; i < wordsToRemove.length; i++) {
+            inStr = inStr.replace(wordsToRemove[i], '');
+        }
+    }
+    else{
+        inStr = inStr.replace(wordsToRemove, '');  
+    }
     inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     let str = inStr.trim(); //删除字符串两端的空白字符
