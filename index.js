@@ -31,6 +31,15 @@ function convertFormulasToLaTeX(inStr) {
     let equation = "";
     let bEquation = false;
     let lastCharPos = 0;
+    let PushEquationToOutStr = () => {
+        if(/[\(\-<=>\\\^_{\|}]/.test(equation)){
+            outStr += ToLatex(equation, lastCharPos);
+        }
+        else
+        {
+            outStr+=equation;
+        }
+    }
     for(let i = 0; i < str.length; i++) {
         let c = str[i];
         if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
@@ -57,13 +66,7 @@ function convertFormulasToLaTeX(inStr) {
             }
         } else if (c.match(/[\u4e00-\u9fff]/)) { //判断是否是中文字符
             if (bEquation) {
-                if(/[\(\-<=>\\\^_{\|}]/.test(equation)){
-                    outStr += ToLatex(equation, lastCharPos);
-                }
-                else
-                {
-                    outStr+=equation;
-                }
+                PushEquationToOutStr();
                 bEquation = false;
                 equation = "";
                 lastCharPos = 0;
@@ -72,7 +75,7 @@ function convertFormulasToLaTeX(inStr) {
         }
     }
     if(equation.length > 0) {
-        outStr += ToLatex(equation, lastCharPos);
+        PushEquationToOutStr();
     }
     console.log(outStr);
     return outStr;
