@@ -1,72 +1,56 @@
 // ==UserScript==
-// @name         Add $$
+// @name         Latexlive公式编辑器 为公式添加 $$ 符号，并修复常见的图片识别结果中的错误
 // @namespace    http://tampermonkey.net/
-// @version      2024-03-14
-// @description  Add `$ $` to equation
+// @version      2024-03-30.3
+// @description  为中文文本中的公式添加 $$ 符号，以适应 Markdown 或 Latex 格式的需求。并修复常见的图片识别结果中的错误
 // @author       Another_Ghost
 // @match        https://*.latexlive.com/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
+// @icon         https://img.icons8.com/?size=50&id=1759&format=png
 // @grant        none
 // @license      MIT
+// @downloadURL https://update.greasyfork.org/scripts/491217/Latexlive%E5%85%AC%E5%BC%8F%E7%BC%96%E8%BE%91%E5%99%A8%20%E4%B8%BA%E5%85%AC%E5%BC%8F%E6%B7%BB%E5%8A%A0%20%24%24%20%E7%AC%A6%E5%8F%B7%EF%BC%8C%E5%B9%B6%E4%BF%AE%E5%A4%8D%E5%B8%B8%E8%A7%81%E7%9A%84%E5%9B%BE%E7%89%87%E8%AF%86%E5%88%AB%E7%BB%93%E6%9E%9C%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF.user.js
+// @updateURL https://update.greasyfork.org/scripts/491217/Latexlive%E5%85%AC%E5%BC%8F%E7%BC%96%E8%BE%91%E5%99%A8%20%E4%B8%BA%E5%85%AC%E5%BC%8F%E6%B7%BB%E5%8A%A0%20%24%24%20%E7%AC%A6%E5%8F%B7%EF%BC%8C%E5%B9%B6%E4%BF%AE%E5%A4%8D%E5%B8%B8%E8%A7%81%E7%9A%84%E5%9B%BE%E7%89%87%E8%AF%86%E5%88%AB%E7%BB%93%E6%9E%9C%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF.meta.js
 // ==/UserScript==
 
 
 (function () {
-    'use strict';
-    // create a new button
-    var btn = document.createElement('button');
-    btn.innerHTML = '复制';
-    // add class to btn
-    btn.className = 'btn btn-light theme-fill';
-    // set id
-    btn.id = 'copy-btn';
-    // add click handler
-    btn.onclick = function () {
-        // get the selected element
-        var selected = document.querySelector('#txta_input');
-        // copy the text
-        navigator.clipboard.writeText(convertFormulasToLaTeX(selected.value));
-        toast('复制成功');
-    };
-    var CONTAINER = "#wrap_immediate > row > div.col-5.col-sm-5.col-md-5.col-lg-5.col-xl-5";
-    // wait container appear and add btn
-    var interval = setInterval(function () {
-        var wrap = document.querySelector(CONTAINER);
-        if (wrap) {
-            wrap.appendChild(btn);
-            clearInterval(interval);
-        }
+    createButton('复制', copyOriginalText, '');
+    createButton('转换后复制', convertFormulasToLaTeX, /\\boldsymbol/g);
 
-    }, 100);
-
-    createButton(1, convertFormulasToLaTeX);
-    createButton(2, convertFormulasToLaTeX, /\\boldsymbol/g);
-
-    function createButton(number, convert, wordsToRemove) {
-        // create a new button
-        let btn = document.createElement('button');
-        btn.innerHTML = `复制${number}`;
-        // add class to btn
-        btn.className = 'btn btn-light theme-fill';
-        // set id
-        btn.id = `copy-btn${number}`;
+    /**
+     * 创建按钮并添加到指定容器中
+     * @param {number} buttonName - 按钮的名字
+     * @param {function} convert - 转换函数
+     * @param {string} wordsToRemove - 需要移除的字符串
+     */
+    function createButton(buttonName, convert, wordsToRemove) {
+        // 创建一个新按钮
+        let button = document.createElement('button');
+        button.innerHTML = `${buttonName}`;
+        button.className = 'btn btn-light btn-outline-dark';
+        //button.id = `copy-btn${buttonId}`;
         // add click handler
-        btn.onclick = function () {
-            // get the selected element
-            var selected = document.querySelector('#txta_input');
-            // copy the text
+        button.onclick = function () {
+            //选中输入文本框的所有文本
+            var selected = document.querySelector('#txta_input'); 
+            //先通过 convert 函数转换文本，再复制
             navigator.clipboard.writeText(convert(selected.value, wordsToRemove));
-            toast('复制成功');
+            displayAlertBox('已复制');
         };
+        //输入框上方的容器
         var CONTAINER = "#wrap_immediate > row > div.col-5.col-sm-5.col-md-5.col-lg-5.col-xl-5";
-        // wait container appear and add btn
+        //等待容器出现并添加按钮
         var interval = setInterval(function () {
             var wrap = document.querySelector(CONTAINER);
             if (wrap) {
-                wrap.appendChild(btn);
+                wrap.appendChild(button);
                 clearInterval(interval);
             }
         }, 200);
+    }
+
+    function copyOriginalText(inStr, wordsToRemove = '') {
+        navigator.clipboard.writeText(inStr);
     }
 
     function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
@@ -82,7 +66,7 @@
         let bEquation = false;
         let lastCharPos = 0;
         let PushEquationToOutStr = () => {
-            if(/[\(\-<=>\\\^_{\|}]/.test(equation)){
+            if(/[\-<=>\\\^_{\|}]/.test(equation)){
                 outStr += ToLatex(equation, lastCharPos);
             }
             else
@@ -106,15 +90,15 @@
                 if(bEquation)
                 {
                     equation += c;
-                    lastCharPos = equation.length; //记录最后一个字符的位置的后一个位置     
-                }   
+                    lastCharPos = equation.length; //记录最后一个字符的位置的后一个位置
+                }
             } else if (c.match(/\s/)) { //判断是否是空白字符
                 if (bEquation) {
                     equation += c; //因为公式中可能有空格字符，所以先把空格字符加入公式字符串
                 } else {
                     outStr += c;
                 }
-            } else if (c.match(/[\u4e00-\u9fff]/)) { //判断是否是中文字符
+            } else if (c.match(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/)) { //判断是否是中文字符
                 if (bEquation) {
                     PushEquationToOutStr();
                     bEquation = false;
@@ -130,7 +114,7 @@
         console.log(outStr);
         return outStr;
     }
-    
+
     /**
      * Insert a character at a specified index in the original string.
      * @param {string} originalString - The original string.
@@ -157,32 +141,31 @@
         return equation;
     }
 
-    function toast(msg) {
-        var toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = msg;
-        toast.style.position = 'fixed';
-        toast.style.bottom = '10px';
-        toast.style.right = '10px';
-        toast.style.zIndex = '9999';
-        toast.style.backgroundColor = '#fff';
-        toast.style.color = '#000';
-        toast.style.padding = '10px';
-        toast.style.borderRadius = '5px';
-        toast.style.boxShadow = '0 0 5px #000';
-        toast.style.fontSize = '16px';
-        toast.style.fontWeight = 'bold';
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.5s';
-        document.body.appendChild(toast);
+    function displayAlertBox(text) {
+        var alertBox = document.createElement('div');
+        alertBox.innerHTML = text;
+        //alertBox.style.display = none;
+        alertBox.style.position = 'fixed';
+        alertBox.style.bottom = `20px`;
+        alertBox.style.left = `50%`;
+        alertBox.style.transform = `translateX(-50%)`;
+        alertBox.style.backgroundColor = `#4CAF50`;
+        alertBox.style.color = `white`;
+        alertBox.style.padding = `12px`;
+        alertBox.style.borderRadius = `5px`;
+        alertBox.style.zIndex = `1000`;
+        alertBox.style.boxShadow = `0px 0px 10px rgba(0,0,0,0.5)`;
+        alertBox.style.opacity = '0';
+        alertBox.style.transition = 'opacity 0.3s';
+        document.body.appendChild(alertBox);
         setTimeout(function () {
-            toast.style.opacity = '1';
+            alertBox.style.opacity = '1';
         }, 100);
         setTimeout(function () {
-            toast.style.opacity = '0';
-        }, 2000);
+            alertBox.style.opacity = '0';
+        }, 1100);
         setTimeout(function () {
-            toast.remove();
-        }, 3000);
+            alertBox.remove();
+        }, 1500);
     }
 })();
