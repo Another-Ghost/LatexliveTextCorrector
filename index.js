@@ -17,18 +17,23 @@ text_output.value = convertFormulasToLaTeX(text_input.value, /\\boldsymbol/g);
 // console.log(matches);
 });
 
-
+let bRadical = true;
 /**
  * 将字符串中的公式转换为LaTeX格式，用"$$"包围起来。
  */
 function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     //let str1 = "3) 求序列  R_{4}(n)  的  Z  变换:\n\n\\boldsymbol{X}(\\mathbf{z})=\\sum_{\\boldsymbol{n}=-\\infty}^{\\infty} \\boldsymbol{x}(\\boldsymbol{n}) z^{-n}=\\sum_{\\boldsymbol{n}\n";
-
+    inStr = inStr.trim(); //删除字符串两端的空白字符
+    if(bRadical)
+    {
+        inStr = inStr.replace(/\\begin{array}{[^{}]*}/g, '\\begin{aligned}');
+        inStr = inStr.replace(/\\end{array}/g, '\\end{aligned}');
+    }
     inStr = inStr.replace(wordsToRemove, '');
     inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     inStr = inStr.replace('输人', '输入'); 
-    let str = inStr.trim(); //删除字符串两端的空白字符
+    let str = inStr.trim(); 
     //console.log(inStr);
     let outStr = "";
     let equation = "";
