@@ -33,7 +33,7 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     inStr = inStr.replace('输人', '输入'); 
-    inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
+    //inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
 
     let str = inStr.trim(); 
     //console.log(inStr);
@@ -83,8 +83,10 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
                 } 
             }
         }
-        else{
-            if((c.match(/[\n\r]/) && (!/\\begin/.test(equation) || /\\end/.test(equation))) || (!c.match(/[ -~]/) && !c.match(/[\n\r]/)))
+        else{ //判断一个公式是否结束
+            if((c.match(/[\n\r]/) && (!/\\begin/.test(equation) || /\\end/.test(equation))) //换行符且是不是在\begin{array}和\end{array}之间，则算作一个公式
+            || (!c.match(/[ -~]/) && !(/\\text *{([^}])*$/.test(equation)) && !c.match(/[\n\r]/)) //判断如果是非换行符的ASCII字符则前边的算作一个公式进行后续处理
+            )
             {
                 PushEquationToOutStr(c);
             }
