@@ -2,7 +2,7 @@
 // @name         Latexlive公式编辑器 为公式添加 $$ 符号，并修复常见的图片识别结果中的错误
 // @namespace    http://tampermonkey.net/
 // @version      2024-03-30.3
-// @description  为中文文本中的公式添加 $$ 符号，以适应 Markdown 或 Latex 格式的需求。并修复常见的图片识别结果中的错误
+// @description  为中文文本中的公式添加 $$ 符号，以适应 Markdown 或 Latex 格式的需求。并修复常见的图片识别结果中的错误。目前还无法处理英文文本中的公式。
 // @author       Another_Ghost
 // @match        https://*.latexlive.com/*
 // @icon         https://img.icons8.com/?size=50&id=1759&format=png
