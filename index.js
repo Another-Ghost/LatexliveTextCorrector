@@ -33,6 +33,8 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     inStr = inStr.replace('输人', '输入'); 
+    inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
+
     let str = inStr.trim(); 
     //console.log(inStr);
     let outStr = "";
