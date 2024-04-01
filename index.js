@@ -19,7 +19,8 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     inStr = inStr.replace(wordsToRemove, '');
     inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
-    inStr = inStr.replace('输人', '输入'); 
+    inStr = inStr.replace(/输人/g, "输入");
+    inStr = inStr.replace(/存人/g, "存入");
     //inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
     let str = inStr.trim(); 
 
@@ -27,38 +28,8 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     let equation = ""; //存储一个公式
     let bEquation = false; //是否在处理一个公式
 
-    //处理并存储一个潜在公式
-    let PushEquationToOutStr = (nextChar) => {
-        if(/[\-<=>\\\^_{\|}\/\*\+\(]/.test(equation) || /^[a-zA-Z0-9]$/.test(equation.trim())){ //判断是否是真的公式
-            outStr += ToMarkdownLatex(equation, nextChar);
-        }
-        else
-        {
-            outStr+=equation;
-        }
-        bEquation = false;
-        equation = "";
-    }
+    let closingPunctuations = /[:,.]/; //结尾的标点符号
 
-    //实际转换格式的函数
-    function ToMarkdownLatex(equation, nextChar)
-    {
-        equationSymbol = "$";
-        let prevChar = outStr[outStr.length-1];
-        if((!nextChar || nextChar.match(/[\n\r]/)) && (!prevChar || prevChar.match(/[\n\r]/))) //判断是否为单行居中显示的公式
-        {
-            equationSymbol = "$$";
-        }
-        if(equation[equation.length-1] != '$' || equation[0] != '$$')
-        {
-            equation = insertCharAt(equation, equationSymbol, findLastNonWhitespaceChar(equation)+1); //在公式字符串的最后一个非空格字符的位置的后一个位置插入"$$")
-        }
-        if(equation[0] != '$' || equation[0] != '$$')
-        {
-            equation = equationSymbol + equation;
-        }
-        return equation;
-    }
 
     //遍历字符串的主循环
     for(let i = 0; i < str.length; i++) {
@@ -66,15 +37,15 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
         //let nextChar = i < str.length - 1 ? str[i + 1] : '';
         if(!bEquation){
             if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
-                if(!bEquation && !c.match(/[:,.]/)) //把开头的 ":" 排除在 $$ 外；因为之后一般会跟着换行符，所以没有写在 ToLatex 函数里
+                if(!bEquation && !c.match(closingPunctuations)) //把公式开头前的（上一句结尾的）标点符号排除在 $$ 外
                 {
                     bEquation = true;
                 } 
             }
         }
         else{ //判断一个公式是否结束
-            if((c.match(/[\n\r]/) && (!/\\begin/.test(equation) || /\\end/.test(equation))) //换行符且是不是在\begin{array}和\end{array}之间，则算作一个潜在公式
-            || (!c.match(/[ -~]/) && !(/\\text *{([^}])*$/.test(equation)) && !c.match(/[\n\r]/)) //判断如果是非换行符的ASCII字符，且不在 \text{} 中，则算作一个潜在公式进行后续处理
+            if((c.match(/[\n\r]/) && (!/\\begin/.test(equation) || /\\end/.test(equation))) //换行符且是不是在\begin{array}和\end{array}之间，则算作一个待定公式
+            || (!c.match(/[ -~]/) && !(/\\text *{([^}])*$/.test(equation)) && !c.match(/[\n\r]/)) //判断如果是非换行符的ASCII字符，且不在 \text{} 中，则算作一个待定公式进行后续处理
             )
             {
                 PushEquationToOutStr(c);
@@ -95,6 +66,70 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     console.log(outStr);
     return outStr;
 
+
+    //处理并存储一个待定公式
+    function PushEquationToOutStr(nextChar) {
+        equation = equation.trim();
+        let prevChar = outStr[outStr.length-1];
+        // if(!((!nextChar || nextChar.match(/[\n\r]/)) && (!prevChar || prevChar.match(/[\n\r]/)))) //判断是否非单行居中显示的公式
+        // {
+        //     equations = str.split(/,/g)
+        //     .map(part => part.trim()) // 去除每个部分的空格
+        //     .filter(part => part !== ''); // 过滤空部分
+        // }
+        
+        if(equation[equation.length-1].match(closingPunctuations))  //因为只能待定公式确定后才能知道末尾的字符是否是标点，因为公式中也可能有标点，所以不能放在之前的步骤判断
+        {
+            closingPunctuation = equation[equation.length-1];
+            equation = equation.slice(0, -1); //去掉结尾的标点符号
+            equation = equation.trim();
+        }
+        if(/[\-<=>\\\^_{\|}\/\*\+\(]/.test(equation) ||
+         /^(?=.*[A-Za-z])(?=.*\d).+$/.test(equation) //^[a-zA-Z0-9]$/.test(equation)){ //判断是否是真的公式
+        ){
+            outStr += ToMarkdownLatex(equation, nextChar);
+            if(closingPunctuation != "")
+            {
+                outStr += closingPunctuation + ' '; // 加上结尾的标点符号
+            }
+        }
+        else
+        {
+            outStr+=equation;
+        }
+        bEquation = false;
+        equation = "";
+        closingPunctuation = "";
+    }
+
+    //实际转换格式的函数
+    function ToMarkdownLatex(equation, nextChar)
+    {
+        equationSymbol = "$";
+        let prevChar = outStr[outStr.length-1];
+        if((!nextChar || nextChar.match(/[\n\r]/)) && (!prevChar || prevChar.match(/[\n\r]/))) //判断是否为单行居中显示的公式
+        {
+            equationSymbol = "$$";
+        }
+        if(equation[equation.length-1] != '$' || equation[0] != '$$')
+        {
+            equation = insertCharAt(equation, equationSymbol, findLastNonWhitespaceChar(equation)+1); //在公式字符串的最后一个非空格字符的位置的后一个位置插入"$$")
+        }
+        if(equation[0] != '$' || equation[0] != '$$')
+        {
+            equation = equationSymbol + equation;
+        }
+        if(prevChar && !prevChar.match(/\s/))   //判断是否需要在公式前加空格，统一格式
+        {
+            equation = ' ' + equation;
+        }
+        if(nextChar && !nextChar.match(/\s/))
+        {
+            equation = equation + ' ';
+        }
+        return equation;
+    }
+
     /**
      * Insert a character at a specified index in the original string.
      * @param {string} originalString - The original string.
@@ -112,5 +147,29 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
         const match = str.match(/(\S)\s*$/);
         return match ? str.lastIndexOf(match[1]) : -1;
     }
-    
+
+    function SplitByLine(str)
+    {
+        let strArray_1 = str.split(/[\n\r]/g);
+        let i = 0;
+        let strArray_2 = [];
+        while(i < strArray.length)
+        {
+            if(strArray[i].match(/\\begin/))
+            {
+                let j = i + 1;
+                while(j < strArray.length && !strArray[j].match(/\\end/))
+                {
+                    j++;
+                }
+                strArray_2.push(strArray.slice(i, j+1).join('\n'));
+                i = j + 1;
+            }
+            else
+            {
+                strArray_2.push(strArray[i]);
+                i++;
+            }
+        }
+    }
 }
