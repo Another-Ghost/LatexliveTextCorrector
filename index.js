@@ -24,6 +24,71 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     //inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
     instr = inStr.trim(); 
 
+    ChineseRegex = /[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g;
+    wordRegex = /\b[a-zA-Z]{2,}\b/g;
+
+    function IsSingleEquation(block){
+        let texts = block.match(/\\text *{[^{}]*}/g);
+        
+        //判断 texts 是否包含某一个字符串的闭包
+        let FoundInTexts = (str) => {
+            for(let i = 0; i < texts.length; i++){
+                if(texts[i].includes(str)){
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        let ChineseStrs = block.match(ChineseRegex);
+        
+        if(ChineseStrs){
+            if(block.match(/\\text/)){
+                for(let i = 0; i < ChineseStrs.length; i++){
+                    if(!FoundInTexts(ChineseStrs[i])){
+                        return false;
+                    }
+                }
+                return true;
+            }else{
+                return true;
+            }   
+        }
+        else{
+            //提取出以空格分隔的 超过两个字母的 英文单词
+            let words = block.match(/\b[a-zA-Z]{2,}\b/g);
+            if(words){
+                for(let i = 0; i < words.length; i++){
+                    if(!FoundInTexts(words[i])){
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else{
+                return true;
+            }
+        }
+
+
+        function isSubstringInText(str, substring) {
+            // 使用正则表达式匹配子串是否在\text{...}里
+            const regex = /\\text\{([^{}]*)\}/g;
+            let match;
+            while ((match = regex.exec(str)) !== null) {
+                if (match[1].includes(substring)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        console.log(isSubstringInText("This is a \\text{sample} text.", "sample")); // true
+        console.log(isSubstringInText("This is a \\text{sample} text.", "not"));    // false        
+        
+    } 
+
     let strs = SplitByLine(inStr);
     for(let i = 0; i < strs.length; i++)
     {
