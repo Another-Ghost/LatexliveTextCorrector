@@ -22,50 +22,54 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     inStr = inStr.replace(/输人/g, "输入");
     inStr = inStr.replace(/存人/g, "存入");
     //inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
-    let str = inStr.trim(); 
+    instr = inStr.trim(); 
 
-    let outStr = ""; //最终输出的字符串
-    let equation = ""; //存储一个公式
-    let bEquation = false; //是否在处理一个公式
+    let strs = SplitByLine(inStr);
+    for(let i = 0; i < strs.length; i++)
+    {
+        let str = strs[i];
+        let outStr = ""; //最终输出的字符串
+        let equation = ""; //存储一个公式
+        let bEquation = false; //是否在处理一个公式
 
-    let closingPunctuations = /[:,.]/; //结尾的标点符号
+        //let closingPunctuations = /[:,.]/; //结尾的标点符号
+        if(str.match(/\\text *{/g))
 
-
-    //遍历字符串的主循环
-    for(let i = 0; i < str.length; i++) {
-        let c = str[i];
-        //let nextChar = i < str.length - 1 ? str[i + 1] : '';
-        if(!bEquation){
-            if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
-                if(!bEquation && !c.match(closingPunctuations)) //把公式开头前的（上一句结尾的）标点符号排除在 $$ 外
+        //遍历字符串的主循环
+        for(let i = 0; i < str.length; i++) {
+            let c = str[i];
+            //let nextChar = i < str.length - 1 ? str[i + 1] : '';
+            if(!bEquation){
+                if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
+                    if(!bEquation && !c.match(closingPunctuations)) //把公式开头前的（上一句结尾的）标点符号排除在 $$ 外
+                    {
+                        bEquation = true;
+                    } 
+                }
+            }
+            else{ //判断一个公式是否结束
+                if((c.match(/[\n\r]/) && (!/\\begin/.test(equation) || /\\end/.test(equation))) //换行符且是不是在\begin{array}和\end{array}之间，则算作一个待定公式
+                || (!c.match(/[ -~]/) && !(/\\text *{([^}])*$/.test(equation)) && !c.match(/[\n\r]/)) //判断如果是非换行符的ASCII字符，且不在 \text{} 中，则算作一个待定公式进行后续处理
+                )
                 {
-                    bEquation = true;
-                } 
+                    PushEquationToOutStr(c);
+                }
+            }
+
+            //循环中，只有此处存储字符
+            if(bEquation){
+                equation += c;
+            }
+            else{
+                outStr += c;
             }
         }
-        else{ //判断一个公式是否结束
-            if((c.match(/[\n\r]/) && (!/\\begin/.test(equation) || /\\end/.test(equation))) //换行符且是不是在\begin{array}和\end{array}之间，则算作一个待定公式
-            || (!c.match(/[ -~]/) && !(/\\text *{([^}])*$/.test(equation)) && !c.match(/[\n\r]/)) //判断如果是非换行符的ASCII字符，且不在 \text{} 中，则算作一个待定公式进行后续处理
-            )
-            {
-                PushEquationToOutStr(c);
-            }
+        if(equation.length > 0) {
+            PushEquationToOutStr('');
         }
-
-        //循环中，只有此处存储字符
-        if(bEquation){
-            equation += c;
-        }
-        else{
-            outStr += c;
-        }
+        console.log(outStr);
+        return outStr;
     }
-    if(equation.length > 0) {
-        PushEquationToOutStr('');
-    }
-    console.log(outStr);
-    return outStr;
-
 
     //处理并存储一个待定公式
     function PushEquationToOutStr(nextChar) {
@@ -171,5 +175,6 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
                 i++;
             }
         }
+        return strArray_2
     }
 }
