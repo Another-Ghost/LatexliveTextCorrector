@@ -1,131 +1,139 @@
-// ==UserScript==
-// @name         Add $$
-// @namespace    http://tampermonkey.net/
-// @version      2024-03-14
-// @description  Add `$ $` to equation
-// @author       Another_Ghost
-// @match        https://*.latexlive.com/*
-// @icon         https://img.icons8.com/?size=50&id=1759&format=png
-// @grant        none
-// @license      MIT
-// ==/UserScript==
+document.getElementById('button').addEventListener('click', function(){
+    let text_input = document.getElementById('text1');
+    let text_output = document.getElementById('text2');
+    text_output.value = convertFormulasToLaTeX(text_input.value, /\\boldsymbol/g);
+    });
 
-
-(function () {
-    'use strict';
-    // create a new button
-    var btn = document.createElement('button');
-    btn.innerHTML = '复制';
-    // add class to btn
-    btn.className = 'btn btn-light theme-fill';
-    // set id
-    btn.id = 'copy-btn';
-    // add click handler
-    btn.onclick = function () {
-        // get the selected element
-        var selected = document.querySelector('#txta_input');
-        // copy the text
-        navigator.clipboard.writeText(convertFormulasToLaTeX(selected.value));
-        displayAlertBox('Copied');
-    };
-    var CONTAINER = "#wrap_immediate > row > div.col-5.col-sm-5.col-md-5.col-lg-5.col-xl-5";
-    // wait container appear and add btn
-    var interval = setInterval(function () {
-        var wrap = document.querySelector(CONTAINER);
-        if (wrap) {
-            wrap.appendChild(btn);
-            clearInterval(interval);
-        }
-
-    }, 100);
-
-    createButton(1, convertFormulasToLaTeX);
-    createButton(2, convertFormulasToLaTeX, /\\boldsymbol/g);
-
-    function createButton(number, convert, wordsToRemove) {
-        // create a new button
-        let btn = document.createElement('button');
-        btn.innerHTML = `Copy${number}`;
-        btn.className = 'btn btn-light btn-outline-dark';
-        // add click handler
-        btn.onclick = function () {
-            // get the selected element
-            var selected = document.querySelector('#txta_input');
-            // copy the text
-            navigator.clipboard.writeText(convert(selected.value, wordsToRemove));
-            displayAlertBox('Copied');
-        };
-        var CONTAINER = "#wrap_immediate > row > div.col-5.col-sm-5.col-md-5.col-lg-5.col-xl-5";
-        // wait container appear and add btn
-        var interval = setInterval(function () {
-            var wrap = document.querySelector(CONTAINER);
-            if (wrap) {
-                wrap.appendChild(btn);
-                clearInterval(interval);
-            }
-        }, 200);
+let bRadical = false; //是否是更激进的转换方式
+/**
+ * 将字符串中的公式转换为LaTeX格式，用"$$"包围起来。
+ */
+function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
+    // 输入的预处理
+    inStr = inStr.trim(); //删除字符串两端的空白字符
+    if(bRadical)
+    {
+        inStr = inStr.replace(/\\begin{array}{[^{}]*}/g, '\\begin{aligned}');
+        inStr = inStr.replace(/\\end{array}/g, '\\end{aligned}');
     }
+    inStr = inStr.replace(wordsToRemove, '');
+    inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
+    inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
+    inStr = inStr.replace(/输人/g, "输入");
+    inStr = inStr.replace(/存人/g, "存入");
+    //inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
+    instr = inStr.trim(); 
 
-    function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
-        //let str1 = "3) 求序列  R_{4}(n)  的  Z  变换:\n\n\\boldsymbol{X}(\\mathbf{z})=\\sum_{\\boldsymbol{n}=-\\infty}^{\\infty} \\boldsymbol{x}(\\boldsymbol{n}) z^{-n}=\\sum_{\\boldsymbol{n}\n";
+    ChineseRegex = /[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g;
+    wordRegex = /\b[a-zA-Z]{2,}\b/g; ///\b[a-zA-Z]{2,}\b/g
+    
+    for(let i = 0; i < strs.length; i++)
+    {
+        let str = strs[i];
+        let outStr = ""; //最终输出的字符串
+        let equation = ""; //存储一个公式
+        let bEquation = false; //是否在处理一个公式
 
-        inStr = inStr.replace(wordsToRemove, '');
-        inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
-        inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
-        let str = inStr.trim(); //删除字符串两端的空白字符
-        //console.log(inStr);
-        let outStr = "";
-        let equation = "";
-        let bEquation = false;
-        let lastCharPos = 0;
-        let PushEquationToOutStr = () => {
-            if(/[\-<=>\\\^_{\|}]/.test(equation)){
-                outStr += ToLatex(equation, lastCharPos);
-            }
-            else
-            {
-                outStr+=equation;
-            }
-        }
+        //let closingPunctuations = /[:,.]/; //结尾的标点符号
+        if(str.match(/\\text *{/g))
+
+        //遍历字符串的主循环
         for(let i = 0; i < str.length; i++) {
             let c = str[i];
-            if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
-                if(!bEquation) {
-                    if(c !== ':') //把开头的 ":" 排除在 $$ 外；因为之后一般会跟着换行符，所以没有写在 ToLatex 函数里
+            //let nextChar = i < str.length - 1 ? str[i + 1] : '';
+            if(!bEquation){
+                if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
+                    if(!bEquation && !c.match(closingPunctuations)) //把公式开头前的（上一句结尾的）标点符号排除在 $$ 外
                     {
                         bEquation = true;
-                    }
-                    else
-                    {
-                        outStr += c;
-                    }
+                    } 
                 }
-                if(bEquation)
+            }
+            else{ //判断一个公式是否结束
+                if((c.match(/[\n\r]/) && (!/\\begin/.test(equation) || /\\end/.test(equation))) //换行符且是不是在\begin{array}和\end{array}之间，则算作一个待定公式
+                || (!c.match(/[ -~]/) && !(/\\text *{([^}])*$/.test(equation)) && !c.match(/[\n\r]/)) //判断如果是非换行符的ASCII字符，且不在 \text{} 中，则算作一个待定公式进行后续处理
+                )
                 {
-                    equation += c;
-                    lastCharPos = equation.length; //记录最后一个字符的位置的后一个位置
+                    PushEquationToOutStr(c);
                 }
-            } else if (c.match(/\s/)) { //判断是否是空白字符
-                if (bEquation) {
-                    equation += c; //因为公式中可能有空格字符，所以先把空格字符加入公式字符串
-                } else {
-                    outStr += c;
-                }
-            } else if (c.match(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/)) { //判断是否是中文字符
-                if (bEquation) {
-                    PushEquationToOutStr();
-                    bEquation = false;
-                    equation = "";
-                    lastCharPos = 0;
-                }
+            }
+
+            //循环中，只有此处存储字符
+            if(bEquation){
+                equation += c;
+            }
+            else{
                 outStr += c;
             }
         }
         if(equation.length > 0) {
-            PushEquationToOutStr();
+            PushEquationToOutStr('');
         }
         console.log(outStr);
         return outStr;
+    }
+
+    //处理并存储一个待定公式
+    function PushEquationToOutStr(nextChar) {
+        equation = equation.trim();
+        let prevChar = outStr[outStr.length-1];
+        // if(!((!nextChar || nextChar.match(/[\n\r]/)) && (!prevChar || prevChar.match(/[\n\r]/)))) //判断是否非单行居中显示的公式
+        // {
+        //     equations = str.split(/,/g)
+        //     .map(part => part.trim()) // 去除每个部分的空格
+        //     .filter(part => part !== ''); // 过滤空部分
+        // }
+        
+        if(equation[equation.length-1].match(closingPunctuations))  //因为只能待定公式确定后才能知道末尾的字符是否是标点，因为公式中也可能有标点，所以不能放在之前的步骤判断
+        {
+            closingPunctuation = equation[equation.length-1];
+            equation = equation.slice(0, -1); //去掉结尾的标点符号
+            equation = equation.trim();
+        }
+        if(/[\-<=>\\\^_{\|}\/\*\+\(]/.test(equation) ||
+            /^(?=.*[A-Za-z])(?=.*\d).+$/.test(equation) //^[a-zA-Z0-9]$/.test(equation)){ //判断是否是真的公式
+        ){
+            outStr += ToMarkdownLatex(equation, nextChar);
+            if(closingPunctuation != "")
+            {
+                outStr += closingPunctuation + ' '; // 加上结尾的标点符号
+            }
+        }
+        else
+        {
+            outStr+=equation;
+        }
+        bEquation = false;
+        equation = "";
+        closingPunctuation = "";
+    }
+
+    //实际转换格式的函数
+    function ToMarkdownLatex(equation, nextChar)
+    {
+        equationSymbol = "$";
+        let prevChar = outStr[outStr.length-1];
+        if((!nextChar || nextChar.match(/[\n\r]/)) && (!prevChar || prevChar.match(/[\n\r]/))) //判断是否为单行居中显示的公式
+        {
+            equationSymbol = "$$";
+        }
+        if(equation[equation.length-1] != '$' || equation[0] != '$$')
+        {
+            equation = insertCharAt(equation, equationSymbol, findLastNonWhitespaceChar(equation)+1); //在公式字符串的最后一个非空格字符的位置的后一个位置插入"$$")
+        }
+        if(equation[0] != '$' || equation[0] != '$$')
+        {
+            equation = equationSymbol + equation;
+        }
+        if(prevChar && !prevChar.match(/\s/))   //判断是否需要在公式前加空格，统一格式
+        {
+            equation = ' ' + equation;
+        }
+        if(nextChar && !nextChar.match(/\s/))
+        {
+            equation = equation + ' ';
+        }
+        return equation;
     }
 
     /**
@@ -141,44 +149,11 @@
         return `${firstPart}${charToInsert}${secondPart}`;
     }
 
-    function ToLatex(equation, lastCharPos)
-    {
-        if(equation[equation.length-1] != '$')
-        {
-            equation = insertCharAt(equation, "$$", lastCharPos); //在公式字符串的最后一个非空格字符的位置的后一个位置插入"$$")
-        }
-        if(equation[0] != '$')
-        {
-            equation = "$$" + equation;
-        }
-        return equation;
+    function findLastNonWhitespaceChar(str) {
+        const match = str.match(/(\S)\s*$/);
+        return match ? str.lastIndexOf(match[1]) : -1;
     }
 
-    function displayAlertBox(text) {
-        var alertBox = document.createElement('div');
-        alertBox.innerHTML = text;
-        //alertBox.style.display = none;
-        alertBox.style.position = 'fixed';
-        alertBox.style.bottom = `20px`;
-        alertBox.style.left = `50%`;
-        alertBox.style.transform = `translateX(-50%)`;
-        alertBox.style.backgroundColor = `#4CAF50`;
-        alertBox.style.color = `white`;
-        alertBox.style.padding = `12px`;
-        alertBox.style.borderRadius = `5px`;
-        alertBox.style.zIndex = `1000`;
-        alertBox.style.boxShadow = `0px 0px 10px rgba(0,0,0,0.5)`;
-        alertBox.style.opacity = '0';
-        alertBox.style.transition = 'opacity 0.3s';
-        document.body.appendChild(alertBox);
-        setTimeout(function () {
-            alertBox.style.opacity = '1';
-        }, 100);
-        setTimeout(function () {
-            alertBox.style.opacity = '0';
-        }, 1100);
-        setTimeout(function () {
-            alertBox.remove();
-        }, 1500);
-    }
-})();
+}
+
+    
