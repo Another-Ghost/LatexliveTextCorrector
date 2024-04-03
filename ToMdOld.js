@@ -73,16 +73,11 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
         return outStr;
     }
 
+
+
     //处理并存储一个待定公式
     function PushEquationToOutStr(nextChar) {
         equation = equation.trim();
-        let prevChar = outStr[outStr.length-1];
-        // if(!((!nextChar || nextChar.match(/[\n\r]/)) && (!prevChar || prevChar.match(/[\n\r]/)))) //判断是否非单行居中显示的公式
-        // {
-        //     equations = str.split(/,/g)
-        //     .map(part => part.trim()) // 去除每个部分的空格
-        //     .filter(part => part !== ''); // 过滤空部分
-        // }
         
         if(equation[equation.length-1].match(closingPunctuations))  //因为只能待定公式确定后才能知道末尾的字符是否是标点，因为公式中也可能有标点，所以不能放在之前的步骤判断
         {
