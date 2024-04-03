@@ -4,7 +4,7 @@ let text_output = document.getElementById('text2');
 text_output.value = convertFormulasToLaTeX(text_input.value, /\\boldsymbol/g);
 });
 
-let bRadical = false; //是否是更激进的转换方式
+let bRadical = true; //是否是更激进的转换方式
 /**
  * 将字符串中的公式转换为LaTeX格式，用"$$"包围起来。
  */
@@ -18,7 +18,7 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
         inStr = inStr.replace(/\\end{array}/g, '\\end{aligned}');
     }
     inStr = inStr.replace(wordsToRemove, '');
-    inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
+    inStr = inStr.replace(/ */g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     inStr = inStr.replace(/输人/g, "输入");
     inStr = inStr.replace(/存人/g, "存入");
@@ -50,10 +50,14 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
         
             let parts = processedBlock.split(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+)|( +[a-zA-Z]{2,} +)/).filter(part => part !== undefined);
             if(parts.length > 1){
-                processedBlock = processedBlock.replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => `$` + match.trim() + '$' );
+                processedBlock = processedBlock.replace(/, +?/g, '，');
+                processedBlock = processedBlock.replace(/: +?/g, '：');
 
-                processedBlock = processedBlock.replace( /\$( +[a-zA-Z]{2,} +)\$/g, '$1');
+                processedBlock = processedBlock.replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => ` $` + match.trim() + '$ ' );
+
+                processedBlock = processedBlock.replace(/\$([a-zA-Z]{2,})\$/g, '$1');
                 
+                //TODO 非单行情况直接删除
                 blocks[i] = processedBlock.replace(/__PLACEHOLDER\d+__/g, placeholder => tempMap[placeholder]);
                 // for(let j = 0; j < parts.length; j++){
                 //     if(!parts[j].match(ChineseRegex) && !parts[j].match(wordRegex)){
@@ -69,7 +73,7 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
             }
             
         }
-        outStr += blocks[i];
+        outStr += blocks[i]+'\n';
     }
 
     return outStr;
