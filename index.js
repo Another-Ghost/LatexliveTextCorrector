@@ -22,16 +22,17 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     inStr = inStr.replace(/输人/g, "输入");
     inStr = inStr.replace(/存人/g, "存入");
-    //inStr = inStr.replace(/\\text *{([^{}]*)}/g, '$1');
-    instr = inStr.trim(); 
+    inStr = inStr.trim(); 
 
     
-    BeginEndRegex = /^\\begin\{(.*?)\}(.*?)\\end\{\1\}$/;
+    BeginEndRegex = /\\begin\{(.*?)\}(.*?)\\end\{\1\}/;
     ChineseRegex = /[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g;
     wordRegex = /\b[a-zA-Z]{2,}\b/g; ///\b[a-zA-Z]{2,}\b/g
 
+    let temp = inStr.match(/\\begin{(.*?)}([\s\S]*?)\\end{\1}/);
+
     let outStr = ""; //最终输出的字符串
-    let blocks = inStr.trim().split(/(\\begin\{(.*?)\}(.*?)\\end\{\1\})|[\n\r]/);
+    let blocks = inStr.trim().split(/(\\begin{(.*?)}([\s\S]*?)\\end{\2})|[\n\r]/g); //.map(x => x.trim()).filter(x => x.trim() != "");
 
     for(let i = 0; i < blocks.length; i++){
         if(!blocks[i].match(BeginEndRegex)){
