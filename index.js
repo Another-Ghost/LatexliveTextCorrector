@@ -27,8 +27,21 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     ChineseRegex = /[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g;
     wordRegex = /\b[a-zA-Z]{2,}\b/g; ///\b[a-zA-Z]{2,}\b/g
 
+    let blocks = SplitByLine(inStr);
+    for(let i = 0; i < blocks.length; i++){
+        let parts = blocks[i].split(/(?<!\/\\text ?{[^{}]*})([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+)+\b[a-zA-Z]{2,}\b/);
+        if(parts.length>1)
+        {
+            for(let j = 0; j < parts.length; j++){
+                if(!parts[j].match(ChineseRegex) && !parts[j].match(wordRegex)){
+                    parts[j] = ToMarkdownLatex(parts[j]);
+                }
+            }
+        }
+    }
+
     function IsSingleEquation(block){
-        let texts = block.match(/\\text *{[^{}]*}/g);
+        let texts = block.match(/\\text ?{[^{}]*}/g);
         
         //判断 texts 是否包含某一个字符串的闭包
         let FoundInTexts = (str) => {
@@ -50,16 +63,9 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
         return true;
     } 
 
-    let blocks = SplitByLine(inStr);
-    for(let i = 0; i < blocks.length; i++){
-        if(IsSingleEquation(blocks[i])){
-            blocks[i] = ToMarkdownLatex(blocks[i]);
-        }
-        else
-        {
-            
-        }
-    }
+
+
+
 
     for(let i = 0; i < strs.length; i++)
     {
