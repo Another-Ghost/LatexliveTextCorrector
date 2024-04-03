@@ -28,28 +28,46 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     BeginEndRegex = /\\begin\{(.*?)\}(.*?)\\end\{\1\}/;
     ChineseRegex = /[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g;
     wordRegex = /\b[a-zA-Z]{2,}\b/g; ///\b[a-zA-Z]{2,}\b/g
-
-    let temp = inStr.match(/\\begin{(.*?)}([\s\S]*?)\\end{\1}/);
+    //let temp = inStr.match(/\\begin{(.*?)}([\s\S]*?)\\end{\1}/);
 
     let outStr = ""; //最终输出的字符串
-    let blocks = inStr.trim().split(/(\\begin{(.*?)}([\s\S]*?)\\end{\2})|[\n\r]/g); //.map(x => x.trim()).filter(x => x.trim() != "");
+    let blocks = SplitToBlocks(inStr);
+
+
 
     for(let i = 0; i < blocks.length; i++){
         if(!blocks[i].match(BeginEndRegex)){
-            let parts = blocks[i].split(/(?<!\/\\text ?{[^{}]*})([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+)+\b[a-zA-Z]{2,}\b/);
-            if(parts.length>1){
-                blocks[i] = "";
-                for(let j = 0; j < parts.length; j++){
-                    if(!parts[j].match(ChineseRegex) && !parts[j].match(wordRegex)){
-                        parts[j] = AddToStartEnd(parts[j], "$");
-                    }
-                    blocks[i] += parts[j];
-                }
+
+            let tempMap = {};
+            let index = 0;
+        
+            // 替换 $\text{...}$ 结构
+            let processedBlock = blocks[i].replace(/\$\\text ？\{[^{}]*\}\$/g, match => {
+                let placeholder = `__PLACEHOLDER${index++}__`;
+                tempMap[placeholder] = match;
+                return placeholder;
+            });
+        
+            let parts = processedBlock.split(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+)|( +[a-zA-Z]{2,} +)/).filter(part => part !== undefined);
+            if(parts.length > 1){
+                processedBlock = processedBlock.replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => `$` + match.trim() + '$' );
+
+                processedBlock = processedBlock.replace( /\$( +[a-zA-Z]{2,} +)\$/g, '$1');
+                
+                blocks[i] = processedBlock.replace(/__PLACEHOLDER\d+__/g, placeholder => tempMap[placeholder]);
+                // for(let j = 0; j < parts.length; j++){
+                //     if(!parts[j].match(ChineseRegex) && !parts[j].match(wordRegex)){
+                //         parts[j] = AddToStartEnd(parts[j], "$");
+                //     }
+                //     blocks[i] += parts[j];
+                // }
+            
             }
             else
             {
                 blocks[i] = AddToStartEnd(blocks[i], "$$");
             }
+            
         }
         outStr += blocks[i];
     }
@@ -59,4 +77,37 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     function AddToStartEnd(str, toAdd){
         return toAdd+str+toAdd;
     }
+
+    function SplitToBlocks(str)
+    {
+        let splits = str.split(/[\n\r]/g).filter(part => part !== undefined);
+        let i = 0;
+        let blocks = [];
+        while(i < splits.length)
+        {
+            if(splits[i].match(/\\begin/))
+            {
+                let j = i + 1;
+                while(j < splits.length && !splits[j].match(/\\end/))
+                {
+                    j++;
+                }
+                let tempStr = "";
+                for(let k = i; k < j + 1; k++)
+                {
+                    tempStr += splits[k];
+                }
+                blocks.push(tempStr);
+                i = j + 1;
+            }
+            else
+            {
+                blocks.push(splits[i]);
+                i++;
+            }
+        }
+        return blocks;
+    }
+
+
 }
