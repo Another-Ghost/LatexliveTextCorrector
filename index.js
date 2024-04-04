@@ -50,35 +50,44 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
                 blocks[i] = blocks[i].replace(/: *?/g, '：');
                 blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) +([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1$2');
 
-                // 在非中文字符串前后加上$
-                //blocks[i] = blocks[i].replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => ` $` + match.trim() + '$ ' );
-
-                // 把英文单词前后的$去掉
-                //blocks[i] = blocks[i].replace(/\$([a-zA-Z]{2,})\$/g, '$1');
-                
-                let tempWordMap = {};
-                let unicodeStart = 0x1000;
-                let replaceFunc = (match) => {
-                    // 将当前 Unicode 值转换为字符串
-                    let placeholder = String.fromCharCode(unicodeStart);
-                    // 递增 Unicode 值以便下一个替换
-                    tempWordMap[unicodeStart++] = match;
-                    return placeholder;
-                };
-                let replacedBlock = blocks[i].replace(/(?<=[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef ])[a-zA-Z]{2,}(?=[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef ])/g, replaceFunc);
-                replacedBlock = replacedBlock.replace(/[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, replaceFunc);
-                //replacedBlock = replacedBlock.replace(/ +/, '');
-                replacedBlock = replacedBlock.replace(/[^\u1000-\u2fff]+/g, match => {
+                // 在非中文和非单词字符串前后加上$
+                blocks[i] = blocks[i].replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => {
                     if(match.trim() === '') {
+                        return match;
+                    }
+                    else if(match.match(/ +[a-zA-Z]{2,} */) || match.match(/^[a-zA-Z]{2,} */)) { // match.match(/^[a-zA-Z]{2,} */) 为匹配 word 开头的情况
                         return match;
                     }
                     else{
                         return ` $` + match.trim() + '$ ';
                     }
                 });
-                // 将替换后的字符串还原
-                blocks[i] = replacedBlock.replace(/[\u1000-\u2fff]/g, placeholder => tempWordMap[placeholder.charCodeAt(0)]);
-                //blocks[i] = processedBlock.replace(/__PLACEHOLDER\d+__/g, placeholder => tempMap[placeholder]);
+
+                // 把英文单词前后的$去掉
+                //blocks[i] = blocks[i].replace(/\$([a-zA-Z]{2,})\$/g, '$1');
+                
+                // let tempWordMap = {};
+                // let unicodeStart = 0x1000;
+                // let replaceFunc = (match) => {
+                //     // 将当前 Unicode 值转换为字符串
+                //     let placeholder = String.fromCharCode(unicodeStart);
+                //     // 递增 Unicode 值以便下一个替换
+                //     tempWordMap[unicodeStart++] = match;
+                //     return placeholder;
+                // };
+                // let replacedBlock = blocks[i].replace(/(?<=[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef ])[a-zA-Z]{2,}(?=[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef ])/g, replaceFunc);
+                // replacedBlock = replacedBlock.replace(/[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, replaceFunc);
+                // //replacedBlock = replacedBlock.replace(/ +/, '');
+                // replacedBlock = replacedBlock.replace(/[^\u1000-\u2fff]+/g, match => {
+                //     if(match.trim() === '') {
+                //         return match;
+                //     }
+                //     else{
+                //         return ` $` + match.trim() + '$ ';
+                //     }
+                // });
+                // // 将替换后的字符串还原
+                // blocks[i] = replacedBlock.replace(/[\u1000-\u2fff]/g, placeholder => tempWordMap[placeholder.charCodeAt(0)]);
             
             }
             else { //单行全公式块，只需整体前后加上$$
