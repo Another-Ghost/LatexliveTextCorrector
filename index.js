@@ -16,24 +16,21 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     {
         inStr = inStr.replace(/\\begin{array}{[^{}]*}/g, '\\begin{aligned}');
         inStr = inStr.replace(/\\end{array}/g, '\\end{aligned}');
-        inStr = inStr.replace(wordsToRemove, '');
     }
-    inStr = inStr.replace(/ */g, ' '); //将多个空格替换为一个空格
+
+    inStr = inStr.replace(wordsToRemove, '');
+    inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     inStr = inStr.replace(/输人/g, "输入");
     inStr = inStr.replace(/存人/g, "存入");
     //inStr = inStr.trim(); 
     
-    //BeginEndRegex = /\\begin\{(.*?)\}(.*?)\\end\{\1\}/;
-    //ChineseRegex = /[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g;
-    //wordRegex = /\b[a-zA-Z]{2,}\b/g; ///\b[a-zA-Z]{2,}\b/g
-
     let outStr = ""; //最终输出的字符串
 
     let blocks = SplitToBlocks(inStr);
 
     for(let i = 0; i < blocks.length; i++){
-        if(!blocks[i].match(/\\begin\{(.*?)\}(.*?)\\end\{\1\}/)){ //判断是否多行非全公式块，是则不需做任何处理
+        if(!blocks[i].match(/\\begin\{(.*?)\}([\s\S]*?)\\end\{\1\}/)){ //判断是否多行非全公式块，是则不需做任何处理
 
             let tempMap = {};
             let index = 0;
@@ -47,16 +44,17 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
         
             let parts = processedBlock.split(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+)|( +[a-zA-Z]{2,} +)/).filter(part => part !== undefined);
             if(parts.length > 1){
-                block[i] = blocks[i].replace(/\\text ?\{([^{}]*)\}/g, '$1'); //非全公式块，去掉\text{}
+                blocks[i] = blocks[i].replace(/\\text ?\{([^{}]*)\}/g, '$1'); //非全公式块，去掉\text{}
                 //非公式行，替换中文句尾标点
-                block[i] = block[i].replace(/, +?/g, '，');
-                block[i] = block[i].replace(/: +?/g, '：');
+                blocks[i] = blocks[i].replace(/, *?/g, '，');
+                blocks[i] = blocks[i].replace(/: *?/g, '：');
+                blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) +([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1$2');
 
                 // 在非中文字符串前后加上$
-                block[i] = block[i].replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => ` $` + match.trim() + '$ ' );
+                blocks[i] = blocks[i].replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => ` $` + match.trim() + '$ ' );
 
                 // 把英文单词前后的$去掉
-                block[i] = block[i].replace(/\$([a-zA-Z]{2,})\$/g, '$1');
+                blocks[i] = blocks[i].replace(/\$([a-zA-Z]{2,})\$/g, '$1');
                 
                 //blocks[i] = processedBlock.replace(/__PLACEHOLDER\d+__/g, placeholder => tempMap[placeholder]);
             
@@ -65,14 +63,17 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
                 blocks[i] = AddToStartEnd(blocks[i], "$$"); 
             }
             
+        }else{ //多行全公式块，只需整体前后加上$$
+            blocks[i] = AddToStartEnd(blocks[i], "$$");
         }
+
         outStr += blocks[i]+'\n';
     }
 
     return outStr;
 
     function AddToStartEnd(str, toAdd){
-        return toAdd+str+toAdd;
+        return toAdd+str.trim()+toAdd;
     }
 
     // 将字符串分割为块
@@ -95,7 +96,7 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
                 let tempStr = "";
                 for(let k = i; k < j + 1; k++)
                 {
-                    tempStr += splits[k];
+                    tempStr += splits[k] + "\n";
                 }
                 blocks.push(tempStr);
                 i = j + 1;
