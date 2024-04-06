@@ -12,7 +12,7 @@
 // @updateURL https://update.greasyfork.org/scripts/491217/Latexlive%E5%85%AC%E5%BC%8F%E7%BC%96%E8%BE%91%E5%99%A8%E8%BE%93%E5%87%BA%E5%A2%9E%E5%BC%BA%EF%BC%9A%E8%BD%AC%20Markdown%20%E6%A0%BC%E5%BC%8F%EF%BC%8C%E9%80%82%E7%94%A8%E4%BA%8E%20Logseq%20%E7%AD%89.meta.js
 // ==/UserScript==
 
-export function convertToLaTeX(){};
+export function correctText(){};
 
 (function () { // 使用匿名函数封装代码，避免变量污染全局环境
     createButton('复制', copyOriginalText, '');
@@ -247,5 +247,5 @@ export function convertToLaTeX(){};
     }
     //myFunction = convertFormulasToLaTeX;
     //window.convertFormulasToLaTeX = convertFormulasToLaTeX;
-    convertToLaTeX = convertFormulasToLaTeX;
+    correctText = convertFormulasToLaTeX;
 })();

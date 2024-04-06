@@ -1,10 +1,11 @@
-//导入ToLatex.js 中的 convertFormulasToLaTeX 函数
-import {convertToLaTeX} from './ToLatex.js';
+/** 测试用 */
+//导入ToLatex.js 中的 correctText 函数
+import {correctText} from './corrector.js';
 
 document.getElementById('button').addEventListener('click', function(){
     let text_input = document.getElementById('text1');
     let text_output = document.getElementById('text2');
-    text_output.value = convertToLaTeX(text_input.value, /\\boldsymbol/g);
+    text_output.value = correctText(text_input.value, /\\boldsymbol/g);
 });
 
 let bRadical = true; //是否是更激进的转换方式
