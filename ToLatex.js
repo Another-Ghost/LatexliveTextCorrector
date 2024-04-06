@@ -1,19 +1,20 @@
 // ==UserScript==
-// @name         Latexlive公式编辑器 为公式添加 $$ 符号，并修复常见的图片识别结果中的错误
+// @name         Latexlive公式编辑器输出增强：转 Markdown 格式，适用于 Logseq 等
 // @namespace    http://tampermonkey.net/
-// @version      2024-03-30.3
-// @description  为中文文本中的公式添加 $$ 符号，以适应 Markdown 或 Latex 格式的需求。并修复常见的图片识别结果中的错误。目前还无法处理英文文本中的公式。
+// @version      2.2.3
+// @description  为中文文本中的公式添加 $$ 符号，以适应 Markdown 或 Latex 格式的需求。并修复常见的图片识别结果中的错误
 // @author       Another_Ghost
 // @match        https://*.latexlive.com/*
 // @icon         https://img.icons8.com/?size=50&id=1759&format=png
-// @grant        none
+// @grant         GM_registerMenuCommand
 // @license      MIT
-// @downloadURL https://update.greasyfork.org/scripts/491217/Latexlive%E5%85%AC%E5%BC%8F%E7%BC%96%E8%BE%91%E5%99%A8%20%E4%B8%BA%E5%85%AC%E5%BC%8F%E6%B7%BB%E5%8A%A0%20%24%24%20%E7%AC%A6%E5%8F%B7%EF%BC%8C%E5%B9%B6%E4%BF%AE%E5%A4%8D%E5%B8%B8%E8%A7%81%E7%9A%84%E5%9B%BE%E7%89%87%E8%AF%86%E5%88%AB%E7%BB%93%E6%9E%9C%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF.user.js
-// @updateURL https://update.greasyfork.org/scripts/491217/Latexlive%E5%85%AC%E5%BC%8F%E7%BC%96%E8%BE%91%E5%99%A8%20%E4%B8%BA%E5%85%AC%E5%BC%8F%E6%B7%BB%E5%8A%A0%20%24%24%20%E7%AC%A6%E5%8F%B7%EF%BC%8C%E5%B9%B6%E4%BF%AE%E5%A4%8D%E5%B8%B8%E8%A7%81%E7%9A%84%E5%9B%BE%E7%89%87%E8%AF%86%E5%88%AB%E7%BB%93%E6%9E%9C%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF.meta.js
+// @downloadURL https://update.greasyfork.org/scripts/491217/Latexlive%E5%85%AC%E5%BC%8F%E7%BC%96%E8%BE%91%E5%99%A8%E8%BE%93%E5%87%BA%E5%A2%9E%E5%BC%BA%EF%BC%9A%E8%BD%AC%20Markdown%20%E6%A0%BC%E5%BC%8F%EF%BC%8C%E9%80%82%E7%94%A8%E4%BA%8E%20Logseq%20%E7%AD%89.user.js
+// @updateURL https://update.greasyfork.org/scripts/491217/Latexlive%E5%85%AC%E5%BC%8F%E7%BC%96%E8%BE%91%E5%99%A8%E8%BE%93%E5%87%BA%E5%A2%9E%E5%BC%BA%EF%BC%9A%E8%BD%AC%20Markdown%20%E6%A0%BC%E5%BC%8F%EF%BC%8C%E9%80%82%E7%94%A8%E4%BA%8E%20Logseq%20%E7%AD%89.meta.js
 // ==/UserScript==
 
+export function convertToLaTeX(){};
 
-(function () {
+(function () { // 使用匿名函数封装代码，避免变量污染全局环境
     createButton('复制', copyOriginalText, '');
     createButton('转换后复制', convertFormulasToLaTeX, /\\boldsymbol/g);
 
@@ -49,98 +50,6 @@
         }, 200);
     }
 
-    function copyOriginalText(inStr, wordsToRemove = '') {
-        navigator.clipboard.writeText(inStr);
-    }
-
-    function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
-        //let str1 = "3) 求序列  R_{4}(n)  的  Z  变换:\n\n\\boldsymbol{X}(\\mathbf{z})=\\sum_{\\boldsymbol{n}=-\\infty}^{\\infty} \\boldsymbol{x}(\\boldsymbol{n}) z^{-n}=\\sum_{\\boldsymbol{n}\n";
-
-        inStr = inStr.replace(wordsToRemove, '');
-        inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
-        inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
-        let str = inStr.trim(); //删除字符串两端的空白字符
-        //console.log(inStr);
-        let outStr = "";
-        let equation = "";
-        let bEquation = false;
-        let lastCharPos = 0;
-        let PushEquationToOutStr = () => {
-            if(/[\-<=>\\\^_{\|}]/.test(equation)){
-                outStr += ToLatex(equation, lastCharPos);
-            }
-            else
-            {
-                outStr+=equation;
-            }
-        }
-        for(let i = 0; i < str.length; i++) {
-            let c = str[i];
-            if(c.match(/[!-~]/)) { //判断是否是非空格ASCII字符
-                if(!bEquation) {
-                    if(c !== ':') //把开头的 ":" 排除在 $$ 外；因为之后一般会跟着换行符，所以没有写在 ToLatex 函数里
-                    {
-                        bEquation = true;
-                    }
-                    else
-                    {
-                        outStr += c;
-                    }
-                }
-                if(bEquation)
-                {
-                    equation += c;
-                    lastCharPos = equation.length; //记录最后一个字符的位置的后一个位置
-                }
-            } else if (c.match(/\s/)) { //判断是否是空白字符
-                if (bEquation) {
-                    equation += c; //因为公式中可能有空格字符，所以先把空格字符加入公式字符串
-                } else {
-                    outStr += c;
-                }
-            } else if (c.match(/[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]/)) { //判断是否是中文字符
-                if (bEquation) {
-                    PushEquationToOutStr();
-                    bEquation = false;
-                    equation = "";
-                    lastCharPos = 0;
-                }
-                outStr += c;
-            }
-        }
-        if(equation.length > 0) {
-            PushEquationToOutStr();
-        }
-        console.log(outStr);
-        return outStr;
-    }
-
-    /**
-     * Insert a character at a specified index in the original string.
-     * @param {string} originalString - The original string.
-     * @param {string} charToInsert - The character to insert.
-     * @param {number} index - The index to insert at.
-     * @returns {string} - The new string with the inserted character.
-     */
-    function insertCharAt(originalString, charToInsert, index) {
-        let firstPart = originalString.slice(0, index);
-        let secondPart = originalString.slice(index);
-        return `${firstPart}${charToInsert}${secondPart}`;
-    }
-
-    function ToLatex(equation, lastCharPos)
-    {
-        if(equation[equation.length-1] != '$')
-        {
-            equation = insertCharAt(equation, "$$", lastCharPos); //在公式字符串的最后一个非空格字符的位置的后一个位置插入"$$")
-        }
-        if(equation[0] != '$')
-        {
-            equation = "$$" + equation;
-        }
-        return equation;
-    }
-
     function displayAlertBox(text) {
         var alertBox = document.createElement('div');
         alertBox.innerHTML = text;
@@ -168,4 +77,175 @@
             alertBox.remove();
         }, 1500);
     }
+
+    function copyOriginalText(inStr, wordsToRemove = '') {
+        return inStr;
+    }
+
+    let bRadical = true; //是否是更激进的转换方式
+    
+
+    if(typeof GM_registerMenuCommand === 'function'){
+        let shortcutKey = null;
+        GM_registerMenuCommand('切换激进转换', function (){
+            bRadical = !bRadical;
+            if(bRadical)
+            {
+                displayAlertBox("开启激进转换");
+            }
+            else
+            {
+                displayAlertBox("关闭激进转换");
+            }
+        }, shortcutKey);
+    }
+    /**
+     * 将字符串中的公式转换为LaTeX格式，用"$$"包围起来。
+     */
+    function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
+    
+        // 输入的预处理
+        inStr = inStr.trim(); //删除字符串两端的空白字符
+        if(bRadical)
+        {
+            inStr = inStr.replace(/\\begin{array}{[^{}]*}/g, '\\begin{aligned}');
+            inStr = inStr.replace(/\\end{array}/g, '\\end{aligned}');
+            inStr = inStr.replace(/\\boldsymbol ?/g, '');
+            inStr = inStr.replace(/\\mathbf ?/g, '');
+            inStr = inStr.replace(/\\mathscr ?/g, '\\mathcal');
+        }
+
+        //inStr = inStr.replace(wordsToRemove, '');
+        inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
+        inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
+        inStr = inStr.replace(/输人/g, "输入");
+        inStr = inStr.replace(/存人/g, "存入");
+        inStr = inStr.replace(/接人/g, "接入");
+        //inStr = inStr.trim(); 
+        
+        let outStr = ""; //最终输出的字符串
+
+        let blocks = SplitToBlocks(inStr);
+
+        for(let i = 0; i < blocks.length; i++){
+            if(!blocks[i].match(/\\begin\{(.*?)\}([\s\S]*?)\\end\{\1\}/)){ //判断是否多行非全公式块，是则不需做任何处理
+
+                let tempMap = {};
+                let index = 0;
+            
+                // 替换 $\text{...}$ 结构
+                let processedBlock = blocks[i].replace(/\$\\text ?\{[^{}]*\}\$/g, match => {
+                    let placeholder = `__PLACEHOLDER${index++}__`;
+                    tempMap[placeholder] = match;
+                    return placeholder;
+                });
+            
+                let parts = processedBlock.split(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+)|( +[a-zA-Z]{2,} +)/).filter(part => part !== undefined);
+                if(parts.length > 1){
+                    blocks[i] = blocks[i].replace(/\\text ?\{([^{}]*)\}/g, '$1'); //非全公式块，去掉\text{}
+                    //非公式行，替换中文句尾标点
+                    blocks[i] = blocks[i].replace(/, *?/g, '，');
+                    blocks[i] = blocks[i].replace(/: *?/g, '：');
+                    blocks[i] = blocks[i].replace(/; *?/g, '；');
+                    blocks[i] = blocks[i].replace(/\? *?/g, '？');
+                    blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) ?\(([^()\d]+?) ?([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1（$2）$3');
+                    blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
+                    blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) + ([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1$2');
+
+                    // 在非中文和非单词字符串前后加上$
+                    blocks[i] = blocks[i].replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => {
+                        if(match.trim() === '') {
+                            return match;
+                        }
+                        else if(match.match(/ +[a-zA-Z]{2,} */) || match.match(/^[a-zA-Z]{2,} */) || match.match(/^\d\. /) || match.match(/^\(?\d\) /)) { // match.match(/^[a-zA-Z]{2,} */) 为匹配 word 开头的情况
+                            return match;
+                        }
+                        else{
+                            return ` $` + match.trim() + '$ ';
+                        }
+                    });
+
+                    // 把英文单词前后的$去掉
+                    //blocks[i] = blocks[i].replace(/\$([a-zA-Z]{2,})\$/g, '$1');
+                    
+                    // let tempWordMap = {};
+                    // let unicodeStart = 0x1000;
+                    // let replaceFunc = (match) => {
+                    //     // 将当前 Unicode 值转换为字符串
+                    //     let placeholder = String.fromCharCode(unicodeStart);
+                    //     // 递增 Unicode 值以便下一个替换
+                    //     tempWordMap[unicodeStart++] = match;
+                    //     return placeholder;
+                    // };
+                    // let replacedBlock = blocks[i].replace(/(?<=[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef ])[a-zA-Z]{2,}(?=[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef ])/g, replaceFunc);
+                    // replacedBlock = replacedBlock.replace(/[\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, replaceFunc);
+                    // //replacedBlock = replacedBlock.replace(/ +/, '');
+                    // replacedBlock = replacedBlock.replace(/[^\u1000-\u2fff]+/g, match => {
+                    //     if(match.trim() === '') {
+                    //         return match;
+                    //     }
+                    //     else{
+                    //         return ` $` + match.trim() + '$ ';
+                    //     }
+                    // });
+                    // // 将替换后的字符串还原
+                    // blocks[i] = replacedBlock.replace(/[\u1000-\u2fff]/g, placeholder => tempWordMap[placeholder.charCodeAt(0)]);
+                
+                }
+                else { //单行全公式块，只需整体前后加上$$
+                    blocks[i] = AddToStartEnd(blocks[i], "$$"); 
+                }
+                
+            }else{ //多行全公式块，只需整体前后加上$$
+                blocks[i] = AddToStartEnd(blocks[i], "$$");
+            }
+
+            outStr += blocks[i]+'\n';
+        }
+
+        //window.internalFunc = convertFormulasToLaTeX;
+
+        return outStr;
+        
+        function AddToStartEnd(str, toAdd){
+            return toAdd+str.trim()+toAdd;
+        }
+
+        // 将字符串分割为块
+        function SplitToBlocks(str)
+        {
+            //先按换行分割
+            let splits = str.split(/[\n\r]/g).filter(part => part !== undefined); 
+            let i = 0;
+            let blocks = [];
+            while(i < splits.length)
+            {
+                //将\begin{x} ... \end{x} 视为一个块，所以需要合并行
+                if(splits[i].match(/\\begin/))
+                {
+                    let j = i + 1;
+                    while(j < splits.length && !splits[j].match(/\\end/))
+                    {
+                        j++;
+                    }
+                    let tempStr = "";
+                    for(let k = i; k < j + 1; k++)
+                    {
+                        tempStr += splits[k] + "\n";
+                    }
+                    blocks.push(tempStr);
+                    i = j + 1;
+                }
+                else
+                {
+                    blocks.push(splits[i]);
+                    i++;
+                }
+            }
+            return blocks;
+        }
+    }
+    //myFunction = convertFormulasToLaTeX;
+    //window.convertFormulasToLaTeX = convertFormulasToLaTeX;
+    convertToLaTeX = convertFormulasToLaTeX;
 })();
