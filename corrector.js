@@ -12,7 +12,7 @@
 // @updateURL    https://github.com/Another-Ghost/LatexliveTextCorrector/blob/main/corrector.js
 // ==/UserScript==
 
-export function correctText(){};
+//export function correctText(){};
 
 (function () { // 使用匿名函数封装代码，避免变量污染全局环境
     createButton('复制', copyOriginalText, '');
