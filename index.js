@@ -16,16 +16,21 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
     {
         inStr = inStr.replace(/\\begin{array}{[^{}]*}/g, '\\begin{aligned}');
         inStr = inStr.replace(/\\end{array}/g, '\\end{aligned}');
+        inStr = inStr.replace(/\\boldsymbol ?/g, '');
+        inStr = inStr.replace(/\\mathbf ?/g, '');
+        inStr = inStr.replace(/\\mathscr ?/g, '\\mathcal');
     }
 
-    inStr = inStr.replace(wordsToRemove, '');
+    //inStr = inStr.replace(wordsToRemove, '');
     inStr = inStr.replace(/ +/g, ' '); //将多个空格替换为一个空格
     inStr = inStr.replace(/\n+/g, '\n'); //去除重复换行符
     inStr = inStr.replace(/输人/g, "输入");
     inStr = inStr.replace(/存人/g, "存入");
+    inStr = inStr.replace(/接人/g, "接入");
     //inStr = inStr.trim(); 
     
     let outStr = ""; //最终输出的字符串
+    let nonFormulaChar = /[\u2000-\uffff]/g;
 
     let blocks = SplitToBlocks(inStr);
 
@@ -48,14 +53,18 @@ function convertFormulasToLaTeX(inStr, wordsToRemove = '') {
                 //非公式行，替换中文句尾标点
                 blocks[i] = blocks[i].replace(/, *?/g, '，');
                 blocks[i] = blocks[i].replace(/: *?/g, '：');
-                blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) +([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1$2');
+                blocks[i] = blocks[i].replace(/; *?/g, '；');
+                blocks[i] = blocks[i].replace(/\? *?/g, '？');
+                blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) ?\(([^()\d]+?) ?([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1（$2）$3');
+                blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
+                blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) + ([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1$2');
 
                 // 在非中文和非单词字符串前后加上$
                 blocks[i] = blocks[i].replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => {
                     if(match.trim() === '') {
                         return match;
                     }
-                    else if(match.match(/ +[a-zA-Z]{2,} */) || match.match(/^[a-zA-Z]{2,} */)) { // match.match(/^[a-zA-Z]{2,} */) 为匹配 word 开头的情况
+                    else if(match.match(/ +[a-zA-Z]{2,} */) || match.match(/^[a-zA-Z]{2,} */) || match.match(/^\d\. /) || match.match(/^\(?\d\) /)) { // match.match(/^[a-zA-Z]{2,} */) 为匹配 word 开头的情况
                         return match;
                     }
                     else{
