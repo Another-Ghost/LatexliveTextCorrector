@@ -148,7 +148,7 @@
                     blocks[i] = blocks[i].replace(/: *?/g, '：');
                     blocks[i] = blocks[i].replace(/; *?/g, '；');
                     blocks[i] = blocks[i].replace(/\? *?/g, '？');
-                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) ?\(([^()\d]+?) ?([\u2000-\uffff])/g, '$1（$2）$3');
+                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) ?\(([^()\d]+?)\) ?([\u2000-\uffff])/g, '$1（$2）$3');
                     blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
                     blocks[i] = blocks[i].replace(/([\u2000-\uffff]) +([\u2000-\uffff])/g, '$1$2');
 
