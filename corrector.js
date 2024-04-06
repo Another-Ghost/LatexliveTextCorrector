@@ -123,6 +123,7 @@
         inStr = inStr.replace(/接人/g, "接入");
         //inStr = inStr.trim(); 
         
+        let nonFormulaChar = /[\u2000-\uffff]/g;
         let outStr = ""; //最终输出的字符串
 
         let blocks = SplitToBlocks(inStr);
@@ -140,7 +141,7 @@
                     return placeholder;
                 });
             
-                let parts = processedBlock.split(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+)|( +[a-zA-Z]{2,} +)/).filter(part => part !== undefined);
+                let parts = processedBlock.split(/([\u2000-\uffff]+)|( +[a-zA-Z]{2,} +)/).filter(part => part !== undefined);
                 if(parts.length > 1){
                     blocks[i] = blocks[i].replace(/\\text ?\{([^{}]*)\}/g, '$1'); //非全公式块，去掉\text{}
                     //非公式行，替换中文句尾标点
@@ -148,17 +149,21 @@
                     blocks[i] = blocks[i].replace(/: *?/g, '：');
                     blocks[i] = blocks[i].replace(/; *?/g, '；');
                     blocks[i] = blocks[i].replace(/\? *?/g, '？');
-                    blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) ?\(([^()\d]+?) ?([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1（$2）$3');
+                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) ?\(([^()\d]+?) ?([\u2000-\uffff])/g, '$1（$2）$3');
                     blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
-                    blocks[i] = blocks[i].replace(/([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]) + ([\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef])/g, '$1$2');
+                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) +([\u2000-\uffff])/g, '$1$2');
 
                     // 在非中文和非单词字符串前后加上$
-                    blocks[i] = blocks[i].replace(/[^\u4E00-\u9FA5\u3000-\u303F\uff00-\uffef]+/g, match => {
+                    blocks[i] = blocks[i].replace(/[^\u2000-\uffff]+/g, match => {
                         if(match.trim() === '') {
                             return match;
                         }
-                        else if(match.match(/ +[a-zA-Z]{2,} */) || match.match(/^[a-zA-Z]{2,} */) || match.match(/^\d\. /) || match.match(/^\(?\d\) /)) { // match.match(/^[a-zA-Z]{2,} */) 为匹配 word 开头的情况
+                        else if(match.match(/^[a-zA-Z]{2,} */) || match.match(/^\d\. /) || match.match(/^\(?\d\) /) || match.match(/([\u2000-\uffff]) *\- *([\u2000-\uffff])/)) { // match.match(/^[a-zA-Z]{2,} */) 为匹配 word 开头的情况
                             return match;
+                        }
+                        else if(match.match(/ +([a-zA-Z]{2,}) */))
+                        {
+                            return ' ' + match.trim() + ' ';
                         }
                         else{
                             return ` $` + match.trim() + '$ ';
