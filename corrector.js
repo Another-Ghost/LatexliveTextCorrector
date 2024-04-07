@@ -149,8 +149,8 @@
                     blocks[i] = blocks[i].replace(/: *?/g, '：');
                     blocks[i] = blocks[i].replace(/; *?/g, '；');
                     blocks[i] = blocks[i].replace(/\? *?/g, '？');
-                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) ?\(([^()\d]+?)\) ?([\u2000-\uffff])/g, '$1（$2）$3');
-                    blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
+                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) ?\(([^()\d]+?)\) ?([\u2000-\uffff])/g, '$1（$2）$3'); //? (中 1 文) 情况，为 $z^{-1} ($ 或 $z )$ 的 情况
+                    //blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
                     blocks[i] = blocks[i].replace(/([\u2000-\uffff]) +([\u2000-\uffff])/g, '$1$2');
 
                     // 在非中文和非单词字符串前后加上$
