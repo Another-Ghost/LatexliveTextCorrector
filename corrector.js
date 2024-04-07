@@ -120,6 +120,7 @@
         inStr = inStr.replace(/输人/g, "输入");
         inStr = inStr.replace(/存人/g, "存入");
         inStr = inStr.replace(/接人/g, "接入");
+        inStr = inStr.replace(/舍人/g, "舍入");
         //inStr = inStr.trim(); 
         
         let nonFormulaChar = /[\u2000-\uffff]/g; //非公式字符的正则表达式
