@@ -83,6 +83,7 @@
     }
 
     let bRadical = true; //是否是更激进的转换方式
+    let bLogseq = false; //是否是为Logseq准备的转换方式
     
     if(typeof GM_registerMenuCommand === 'function'){
         let shortcutKey = null;
@@ -95,6 +96,18 @@
             else
             {
                 displayAlertBox("关闭激进转换");
+            }
+        }, shortcutKey);
+
+        GM_registerMenuCommand('切换Logseq格式转换', function (){
+            bLogseq = !bLogseq;
+            if(bLogseq)
+            {
+                displayAlertBox("开启Logseq格式转换");
+            }
+            else
+            {
+                displayAlertBox("关闭Logseq格式转换");
             }
         }, shortcutKey);
     }
@@ -176,7 +189,19 @@
             }else{ //多行全公式块，只需整体前后加上$$
                 blocks[i] = AddToStartEnd(blocks[i], "$$");
             }
-
+            if(bLogseq)
+            {
+                if(blocks[i].match(/^\d+\. /))
+                {
+                    blocks[i] = blocks[i].replace(/^\d+\. /, '');
+                    blocks[i] = '- ' + blocks[i] + '\n' + 'logseq.order-list-type:: number';
+                }
+                else if(blocks[i].match(/^\(\d+\) /))
+                {
+                    blocks[i] = blocks[i].replace(/^(\()?\d+\) /, '');
+                    blocks[i] = '   - ' + blocks[i] + '\n' + 'logseq.order-list-type:: number';
+                }
+            }
             outStr += blocks[i]+'\n';
         }
 
