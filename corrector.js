@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Latexlive公式编辑器输出增强：转 Markdown 格式，适用于 Logseq 等
 // @namespace    http://tampermonkey.net/
-// @version      2.3.2
+// @version      2.4.2
 // @description  为中文文本中的公式添加 $$ 符号，以适应 Markdown 或 Latex 格式的需求。并修复常见的图片识别结果中的错误
 // @author       Another_Ghost
 // @match        https://*.latexlive.com/*
