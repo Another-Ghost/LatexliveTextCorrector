@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Latexlive公式编辑器输出增强：转 Markdown 格式，适用于 Logseq 等
 // @namespace    http://tampermonkey.net/
-// @version      2.3.1
+// @version      2.3.2
 // @description  为中文文本中的公式添加 $$ 符号，以适应 Markdown 或 Latex 格式的需求。并修复常见的图片识别结果中的错误
 // @author       Another_Ghost
 // @match        https://*.latexlive.com/*
@@ -133,6 +133,7 @@
         inStr = inStr.replace(/输人/g, "输入");
         inStr = inStr.replace(/存人/g, "存入");
         inStr = inStr.replace(/接人/g, "接入");
+        inStr = inStr.replace(/舍人/g, "舍入");
         //inStr = inStr.trim(); 
         
         let nonFormulaChar = /[\u2000-\uffff]/g; //非公式字符的正则表达式
@@ -161,8 +162,8 @@
                     blocks[i] = blocks[i].replace(/: *?/g, '：');
                     blocks[i] = blocks[i].replace(/; *?/g, '；');
                     blocks[i] = blocks[i].replace(/\? *?/g, '？');
-                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) ?\(([^()\d]+?)\) ?([\u2000-\uffff])/g, '$1（$2）$3');
-                    blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
+                    blocks[i] = blocks[i].replace(/([\u2000-\uffff]) ?\(([^()\d]+?)\) ?([\u2000-\uffff])/g, '$1（$2）$3'); //? (中 1 文) 情况，为 $z^{-1} ($ 或 $z )$ 的 情况
+                    //blocks[i] = blocks[i].replace(/[^\d]\. /g, '。');
                     blocks[i] = blocks[i].replace(/([\u2000-\uffff]) +([\u2000-\uffff])/g, '$1$2');
 
                     // 在非中文和非单词字符串前后加上$
